@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Твой Гаджет — Прайс</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #080810;
+    color: #f0f0f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  .header {
+    background: linear-gradient(135deg, #0d0d1a 0%, #0a0a14 100%);
+    border-bottom: 2px solid #e9456033;
+    padding: 16px 18px 12px;
+    text-align: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-sub { font-size: 11px; color: #e94560; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 4px; }
+  .header-title { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .header-desc { font-size: 11px; color: #444; margin-top: 3px; }
+  .header-addr { font-size: 11px; color: #333; margin-top: 2px; }
+
+  .tabs { display: flex; padding: 12px 16px 0; gap: 8px; }
+  .tab-btn {
+    flex: 1; padding: 10px 0; border-radius: 10px; border: none; cursor: pointer;
+    font-size: 14px; transition: all .2s; font-family: inherit;
+  }
+  .tab-btn.active { background: #e94560; color: #fff; font-weight: 700; }
+  .tab-btn.inactive { background: #13131f; color: #666; }
+
+  .panel { padding: 14px 16px; display: none; }
+  .panel.active { display: block; }
+
+  .section-label { font-size: 11px; color: #444; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; }
+
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pill {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid #222;
+    background: #111; color: #555; font-size: 13px; cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+  .pill.active { border-color: #e94560; background: #e9456022; color: #e94560; font-weight: 700; }
+
+  .model-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .model-pill {
+    padding: 6px 11px; border-radius: 8px; border: 1.5px solid #1e1e2e;
+    background: #0e0e18; color: #666; font-size: 11px; cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+  .model-pill.active { border-color: #e94560; background: #e9456018; color: #e94560; font-weight: 700; }
+
+  .search-input {
+    width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #1e1e2e;
+    background: #0e0e18; color: #ddd; font-size: 13px; margin-bottom: 12px;
+    outline: none; font-family: inherit;
+  }
+
+  .table-header {
+    background: linear-gradient(90deg, #0d0d1a, #e9456022);
+    padding: 10px 14px; border-radius: 10px 10px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid #e9456033;
+  }
+  .table-header span:first-child { font-weight: 700; font-size: 14px; }
+  .table-badge { font-size: 11px; color: #e94560; background: #e9456018; padding: 3px 10px; border-radius: 8px; }
+
+  .table-body { border-radius: 0 0 12px 12px; overflow: hidden; border: 1px solid #1a1a2a; border-top: none; }
+  .table-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 14px; border-top: 1px solid #13131f; cursor: pointer;
+    transition: background .1s;
+  }
+  .table-row:first-child { border-top: none; }
+  .table-row:nth-child(odd) { background: #0e0e18; }
+  .table-row:nth-child(even) { background: #0b0b14; }
+  .table-row:active { background: #e9456012; }
+  .row-name { font-size: 13px; color: #ccc; flex: 1; padding-right: 10px; }
+  .row-price { font-size: 14px; font-weight: 700; color: #e94560; white-space: nowrap; padding: 3px 8px; border-radius: 6px; }
+  .row-price.clarify { color: #555; font-weight: 400; font-size: 12px; }
+  .row-price.dash { color: #444; font-weight: 400; font-size: 12px; }
+  .row-price.copied { color: #52b788; background: #52b78820; }
+  .price-note { font-size: 10px; color: #888; margin-left: 3px; }
+
+  .table-note { font-size: 11px; color: #333; margin-top: 8px; text-align: center; }
+
+  .info-blocks { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .info-block {
+    flex: 1 1 80px; text-align: center; padding: 10px 6px;
+    background: #0e0e18; border-radius: 10px; border: 1px solid #1a1a2a;
+  }
+  .info-icon { font-size: 20px; }
+  .info-text { font-size: 10px; color: #666; margin-top: 4px; line-height: 1.4; }
+
+  /* Диагностика */
+  .diag-model-hint {
+    padding: 8px 14px; border-radius: 8px; margin-bottom: 14px;
+    background: #4cc9f015; border: 1px solid #4cc9f033;
+    font-size: 13px; color: #4cc9f0;
+  }
+  .symptom-btn {
+    display: flex; width: 100%; text-align: left;
+    justify-content: space-between; align-items: center;
+    padding: 11px 14px; margin-bottom: 7px; border-radius: 10px;
+    border: 1.5px solid #1e1e2e; background: #0e0e18;
+    color: #aaa; font-size: 13px; cursor: pointer;
+    transition: all .15s; font-family: inherit;
+  }
+  .symptom-btn.active { border-color: #e94560; background: #e9456015; color: #fff; }
+  .urgent-badge { font-size: 10px; background: #e94560; color: #fff; padding: 2px 7px; border-radius: 5px; flex-shrink: 0; margin-left: 8px; }
+
+  .result-card { margin-top: 6px; border-radius: 14px; overflow: hidden; border: 2px solid #4cc9f0; }
+  .result-card.urgent { border-color: #e94560; }
+  .result-header { padding: 12px 16px; font-weight: 700; font-size: 14px; }
+  .result-header.normal { background: linear-gradient(90deg, #091826, #0a2030); }
+  .result-header.urgent-bg { background: linear-gradient(90deg, #4a0010, #1a0008); }
+  .result-body { padding: 16px; background: #0b0b14; }
+  .result-label { font-size: 12px; color: #555; margin-bottom: 4px; }
+  .result-value { font-size: 15px; color: #fff; font-weight: 600; margin-bottom: 12px; }
+  .result-diagnosis { font-size: 13px; color: #4cc9f0; margin-bottom: 16px; line-height: 1.5; font-style: italic; }
+  .result-diagnosis.urgent-text { color: #ff9999; }
+  .result-divider { border-top: 1px solid #1a1a2a; padding-top: 14px; }
+  .result-service {
+    background: #111; border: 1px solid #4cc9f033; border-radius: 10px;
+    padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .result-service-name { font-size: 13px; color: #ddd; }
+  .result-service-price { font-size: 18px; font-weight: 700; color: #e94560; }
+  .result-service-price.clarify { font-size: 13px; color: #555; }
+  .result-note { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #080810; font-size: 11px; color: #444; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-sub">Сервисный центр • Красноярск</div>
+  <div class="header-title">📱 Твой Гаджет</div>
+  <div class="header-desc">Ремонт iPhone • Гарантия 30 дней • Диагностика бесплатно</div>
+  <div class="header-addr">📍 г. Красноярск, пр-т Комсомольский, 17</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('price')">💰 Прайс-лист</button>
+  <button class="tab-btn inactive" onclick="switchTab('diag')">🔍 Диагностика</button>
+</div>
+
+<!-- ПРАЙС -->
+<div id="panel-price" class="panel active">
+  <div class="section-label" style="margin-top:4px">Серия</div>
+  <div class="pills" id="group-pills"></div>
+  <div class="section-label">Модель</div>
+  <div class="model-pills" id="model-pills"></div>
+  <input class="search-input" id="search" placeholder="🔎 Поиск услуги..." oninput="renderTable()">
+  <div class="table-header">
+    <span id="model-label">iPhone 11</span>
+    <span class="table-badge" id="service-count"></span>
+  </div>
+  <div class="table-body" id="table-body"></div>
+  <div class="table-note">⏳ — срок до 1 недели • Нажмите на цену — скопирует</div>
+  <div class="info-blocks">
+    <div class="info-block"><div class="info-icon">🔍</div><div class="info-text">Диагностика<br>бесплатно</div></div>
+    <div class="info-block"><div class="info-icon">🛡️</div><div class="info-text">Гарантия<br>30 дней</div></div>
+    <div class="info-block"><div class="info-icon">⚡</div><div class="info-text">Ремонт при<br>вас 20–40 мин</div></div>
+    <div class="info-block"><div class="info-icon">📍</div><div class="info-text">Комсомольский 17<br>Красноярск</div></div>
+  </div>
+</div>
+
+<!-- ДИАГНОСТИКА -->
+<div id="panel-diag" class="panel">
+  <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.5">
+    Выберите симптом → предварительный диагноз и стоимость по выбранной модели.
+  </div>
+  <div class="diag-model-hint">Модель: <strong id="diag-model-name"></strong> <span style="font-size:11px;color:#555">— менять на вкладке «Прайс»</span></div>
+  <div id="symptom-list"></div>
+  <div id="result-card"></div>
+</div>
+
+<script>
+// ===== ДАННЫЕ =====
+const MODELS = [
+  "iPhone 7","iPhone 7 Plus","iPhone 8/SE","iPhone 8 Plus",
+  "iPhone X","iPhone XS","iPhone XR","iPhone 11",
+  "iPhone 11 Pro","iPhone 11 Pro Max","iPhone 12 mini","iPhone 12",
+  "iPhone 12 Pro","iPhone 12 Pro Max","iPhone 13 mini","iPhone 13",
+  "iPhone 13 Pro","iPhone 13 Pro Max","iPhone 14","iPhone 14 Plus",
+  "iPhone 14 Pro","iPhone 14 Pro Max","iPhone 15","iPhone 15 Plus",
+  "iPhone 15 Pro","iPhone 15 Pro Max"
+];
+
+const GROUPS = [
+  {label:"7–8", range:[0,3]},
+  {label:"X–XR", range:[4,6]},
+  {label:"11", range:[7,9]},
+  {label:"12", range:[10,13]},
+  {label:"13", range:[14,17]},
+  {label:"14", range:[18,21]},
+  {label:"15", range:[22,25]},
+];
+
+const SERVICES = [
+  {name:"Замена дисплея (оригинал)", prices:[null,null,null,null,null,null,null,"6 490","9 990","10 990","10 990","12 990","12 990","19 990*",null,"14 990","28 990*","29 990*","17 990*",null,"29 990*","32 990*","19 990*",null,"33 990*","39 990*"]},
+  {name:"Замена дисплея (копия)", prices:["2 290","2 490","2 490","2 890","3 990","4 490","3 990","4 000","4 990","5 990","6 990",null,"7 490","8 490",null,"8 990","10 990","12 490","8 990",null,"15 990","16 990","14 990",null,"18 990","19 990"]},
+  {name:"Переклейка дисплея", prices:["2 990","3 490","3 490","3 490","4 990","4 990","4 990","4 990","5 990","6 490","6 990","6 990","6 990","7 990",null,"8 990","8 990","9 990","8 990",null,"12 990","15 990","15 990",null,"18 000","22 990"]},
+  {name:"Замена АКБ (премиум)", prices:["1 490","1 490","1 590","1 790","2 490","2 490","1 990","2 490","2 890","2 990",null,"3 990","4 490","4 990","3 490","3 990","4 490","4 990","3 990",null,"5 990","6 990","4 990",null,"6 990","7 990"]},
+  {name:"Замена динамика (верхнего)", prices:["790","790","790","890","1 990","1 990","1 990","1 990","2 490","2 690","3 490","3 990","3 990","3 990","3 990","3 990","4 490","4 990","4 490",null,"4 990","5 490","5 490",null,"5 990","6 990"]},
+  {name:"Замена динамика (нижнего)", prices:["790","790","790","890","990","990","990","990","1 200","1 500","2 990","2 990",null,"2 990","3 490","3 990","4 990","5 490","4 990",null,"5 490","5 990","5 990",null,"5 990","6 990"]},
+  {name:"Замена основной камеры", prices:["1 690","1 990","1 990","1 990","2 490","2 490","2 490","2 990","4 490","4 990","4 990","4 990","8 990","8 990","5 990","5 990","8 990","8 990","6 490",null,"8 990","9 990","6 990",null,"9 990","10 990"]},
+  {name:"Замена фронтальной камеры", prices:["1 490","1 690","1 490","1 690","1 990","1 990","1 990","1 990","2 490","2 990","2 990","3 490","3 990","3 990","3 990","3 990","5 990","5 990","4 990",null,"6 490","6 990","5 490",null,"6 990","7 990"]},
+  {name:"Замена микрофона", prices:["от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990","от 990",null,"от 990","от 990","от 990",null,"от 990","от 990"]},
+  {name:"Замена корпуса", prices:["2 490","2 690","2 990","3 290","4 490","4 490","4 990","4 990","5 990","5 990","5 990","6 490","7 490","7 990","5 990","6 990","8 490","8 990","6 990",null,"8 990","9 990","7 990",null,null,null]},
+  {name:"Замена кнопок громкости", prices:["990","990","1 190","1 290","1 990","1 990","1 990","1 990","1 990","1 990","2 490","2 490","2 990","3 490","2 990","2 990","3 490","3 990","3 990",null,"4 490","4 990","4 990",null,"4 990","5 990"]},
+  {name:"Замена кнопки включения", prices:["990","990","1 190","1 290","1 990","1 990","1 990","1 990","1 990","1 990","2 490","2 490","2 990","3 490","2 990","2 990","3 490","3 990","3 990",null,"4 490","4 990","4 990",null,"4 990","5 990"]},
+  {name:"Замена вибромотора", prices:["500","700","990","990","990","990","990","990","1 190","1 190","1 990","1 990","1 990","1 990","1 990","1 990","2 490","2 990","2 990",null,"2 990","3 490","3 990",null,"3 990","3 990"]},
+  {name:"Замена разъёма зарядки", prices:["2 000","2 000","1 990","1 990","2 490","2 490","2 490","2 490","2 990","2 990","3 990","3 990","4 490","4 990","3 990","3 990","4 490","4 990","4 990",null,"5 490","5 990",null,null,"6 490","6 990"]},
+  {name:"Замена задней крышки", prices:[null,null,"-","-","корпус","корпус","корпус","корпус","4 490","4 990","4 990","4 990","5 990","6 990","4 990","4 990","5 990","6 990","4 990",null,"6 990","7 990","6 500",null,"6 990","7 990"]},
+  {name:"Замена стекла камеры", prices:["990","990","990","990","1 500","1 500","1 500","1 500","1 500","1 500","2 490","2 490","2 490","2 490","2 490","2 490","2 990","2 990",null,null,"3 990","3 990",null,null,null,null]},
+  {name:"Ремонт материнской платы", prices:["от 1500","от 1500","от 2500","от 2500","от 4000","от 4000","от 4000","от 4000","от 4000","от 4000","от 5000","от 5000","от 7000","от 7000","от 5000","от 5000","от 7000","от 8000","от 7000",null,"от 9000","от 10000","от 10000","от 10000","от 10000","от 10000"]},
+  {name:"Обновление ПО", prices:["500","500","500","500","500","500","500","500","500","500","500","500","500","500","500","500","500","500","500",null,"500","500","500",null,"500","500"]},
+];
+
+const SYMPTOMS = [
+  {symptom:"Разбит экран / не реагирует сенсор", diagnosis:"Требуется замена дисплейного модуля", service:"Замена дисплея (копия)", urgent:false},
+  {symptom:"Тёмные пятна / полосы на экране", diagnosis:"Повреждение матрицы, переклейка или замена дисплея", service:"Переклейка дисплея", urgent:false},
+  {symptom:"Быстро садится / не держит заряд", diagnosis:"Износ аккумулятора (ёмкость ниже 80%)", service:"Замена АКБ (премиум)", urgent:false},
+  {symptom:"Не заряжается / нет контакта", diagnosis:"Загрязнение или повреждение разъёма зарядки", service:"Замена разъёма зарядки", urgent:false},
+  {symptom:"Упал в воду / намок", diagnosis:"Окисление контактов — срочная чистка и диагностика платы", service:"Ремонт материнской платы", urgent:true},
+  {symptom:"Не слышно собеседника в трубке", diagnosis:"Неисправность верхнего динамика", service:"Замена динамика (верхнего)", urgent:false},
+  {symptom:"Собеседник не слышит меня", diagnosis:"Неисправность микрофона", service:"Замена микрофона", urgent:false},
+  {symptom:"Нет звука / музыки", diagnosis:"Повреждение нижнего динамика", service:"Замена динамика (нижнего)", urgent:false},
+  {symptom:"Не работает / мутное фото основной камеры", diagnosis:"Неисправность модуля основной камеры", service:"Замена основной камеры", urgent:false},
+  {symptom:"Плохо работает фронтальная камера", diagnosis:"Неисправность фронтальной камеры", service:"Замена фронтальной камеры", urgent:false},
+  {symptom:"Треснуло стекло на камере", diagnosis:"Замена защитного стекла камеры", service:"Замена стекла камеры", urgent:false},
+  {symptom:"Не работает кнопка питания или громкости", diagnosis:"Повреждение кнопки или шлейфа", service:"Замена кнопки включения", urgent:false},
+  {symptom:"Не вибрирует телефон", diagnosis:"Неисправность вибромотора", service:"Замена вибромотора", urgent:false},
+  {symptom:"Не включается", diagnosis:"Неисправность платы или АКБ — нужна диагностика", service:"Ремонт материнской платы", urgent:true},
+  {symptom:"Глючит после обновления / завис", diagnosis:"Программная ошибка — требуется обновление / восстановление ПО", service:"Обновление ПО", urgent:false},
+  {symptom:"Помят / треснул корпус", diagnosis:"Замена корпуса или задней крышки", service:"Замена корпуса", urgent:false},
+];
+
+// ===== СОСТОЯНИЕ =====
+let currentModelIdx = 7;
+let currentSymptom = null;
+let copiedRow = null;
+
+// ===== TELEGRAM =====
+if (window.Telegram && window.Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+  Telegram.WebApp.setHeaderColor('#080810');
+  Telegram.WebApp.setBackgroundColor('#080810');
+}
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+function init() {
+  renderGroupPills();
+  renderModelPills();
+  renderTable();
+  renderSymptoms();
+  updateDiagModel();
+}
+
+function renderGroupPills() {
+  const el = document.getElementById('group-pills');
+  el.innerHTML = GROUPS.map(g => {
+    const active = currentModelIdx >= g.range[0] && currentModelIdx <= g.range[1];
+    return `<button class="pill ${active?'active':''}" onclick="selectGroup(${g.range[0]})">${g.label}</button>`;
+  }).join('');
+}
+
+function selectGroup(idx) {
+  currentModelIdx = idx;
+  renderGroupPills();
+  renderModelPills();
+  renderTable();
+  updateDiagModel();
+}
+
+function renderModelPills() {
+  const el = document.getElementById('model-pills');
+  el.innerHTML = MODELS.map((m, i) => {
+    const short = m.replace('iPhone ', '');
+    return `<button class="model-pill ${i===currentModelIdx?'active':''}" onclick="selectModel(${i})">${short}</button>`;
+  }).join('');
+}
+
+function selectModel(idx) {
+  currentModelIdx = idx;
+  renderGroupPills();
+  renderModelPills();
+  renderTable();
+  updateDiagModel();
+  if (currentSymptom !== null) renderResultCard();
+}
+
+function getPrice(p) {
+  if (p === null) return {text:'уточнять', cls:'clarify', clickable:false};
+  if (p === '-') return {text:'—', cls:'dash', clickable:false};
+  if (p === 'корпус') return {text:'замена корпуса', cls:'clarify', clickable:false};
+  if (p === 'нет') return {text:'нет', cls:'dash', clickable:false};
+  const hasNote = p.includes('*');
+  return {text: p.replace('*','') + ' ₽', cls:'', clickable:true, note:hasNote};
+}
+
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = SERVICES.filter(s => s.name.toLowerCase().includes(q));
+  document.getElementById('model-label').textContent = '📱 ' + MODELS[currentModelIdx];
+  document.getElementById('service-count').textContent = filtered.length + ' услуг';
+  document.getElementById('table-body').innerHTML = filtered.map((s,i) => {
+    const p = getPrice(s.prices[currentModelIdx]);
+    return `<div class="table-row" onclick="copyPrice('${s.name.replace(/'/g,"\\'")}', this)">
+      <span class="row-name">${s.name}</span>
+      <span class="row-price ${p.cls}">${p.clickable ? p.text : p.text}${p.note?'<span class="price-note">⏳</span>':''}</span>
+    </div>`;
+  }).join('');
+}
+
+function copyPrice(name, rowEl) {
+  const svc = SERVICES.find(s => s.name === name);
+  if (!svc) return;
+  const p = getPrice(svc.prices[currentModelIdx]);
+  if (!p.clickable) return;
+  const text = name + ': ' + p.text;
+  try { navigator.clipboard.writeText(text); } catch(e) {}
+  const priceEl = rowEl.querySelector('.row-price');
+  const orig = priceEl.textContent;
+  priceEl.textContent = '✓ скопировано';
+  priceEl.className = 'row-price copied';
+  setTimeout(() => {
+    priceEl.textContent = p.text;
+    priceEl.className = 'row-price ' + p.cls;
+  }, 1400);
+}
+
+// ===== ДИАГНОСТИКА =====
+function updateDiagModel() {
+  const el = document.getElementById('diag-model-name');
+  if (el) el.textContent = MODELS[currentModelIdx];
+}
+
+function renderSymptoms() {
+  document.getElementById('symptom-list').innerHTML = SYMPTOMS.map((s,i) =>
+    `<button class="symptom-btn ${i===currentSymptom?'active':''}" onclick="selectSymptom(${i})">
+      <span>${s.symptom}</span>
+      ${s.urgent ? '<span class="urgent-badge">СРОЧНО</span>' : ''}
+    </button>`
+  ).join('');
+}
+
+function selectSymptom(i) {
+  currentSymptom = i;
+  renderSymptoms();
+  renderResultCard();
+}
+
+function renderResultCard() {
+  if (currentSymptom === null) { document.getElementById('result-card').innerHTML = ''; return; }
+  const item = SYMPTOMS[currentSymptom];
+  const svc = SERVICES.find(s => s.name === item.service);
+  const price = svc ? getPrice(svc.prices[currentModelIdx]) : null;
+  document.getElementById('result-card').innerHTML = `
+    <div class="result-card ${item.urgent?'urgent':''}">
+      <div class="result-header ${item.urgent?'urgent-bg':'normal'}">
+        ${item.urgent ? '⚡ Срочный случай!' : '🔧 Предварительный диагноз'}
+      </div>
+      <div class="result-body">
+        <div class="result-label">Симптом:</div>
+        <div class="result-value">${item.symptom}</div>
+        <div class="result-label">Вероятная причина:</div>
+        <div class="result-diagnosis ${item.urgent?'urgent-text':''}">${item.diagnosis}</div>
+        <div class="result-divider">
+          <div class="result-label" style="margin-bottom:8px">Рекомендуемая услуга:</div>
+          <div class="result-service">
+            <span class="result-service-name">${item.service}</span>
+            ${price ? `<span class="result-service-price ${price.clickable?'':'clarify'}">${price.text}</span>` : ''}
+          </div>
+        </div>
+        <div class="result-note">ℹ️ Точная стоимость определяется после бесплатной диагностики. Гарантия на работу 30 дней.</div>
+      </div>
+    </div>`;
+}
+
+// ===== ВКЛАДКИ =====
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.classList.add('inactive'); });
+  document.getElementById('panel-' + tab).classList.add('active');
+  event.target.classList.remove('inactive');
+  event.target.classList.add('active');
+  if (tab === 'diag') updateDiagModel();
+}
+
+init();
+</script>
+</body>
+</html>
