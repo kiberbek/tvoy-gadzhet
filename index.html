@@ -113,9 +113,7 @@ body { background:var(--black); color:var(--white); font-family:'Segoe UI',syste
   <button class="tab-btn inactive" onclick="switchTab('diag',this)">🔍 Диагностика</button>
 </div>
 <div id="panel-price" class="panel active">
-  <div class="section-label" style="margin-top:4px">Серия</div>
-  <div class="pills" id="group-pills"></div>
-  <div class="section-label">Модель</div>
+  <div class="section-label" style="margin-top:4px">Модель</div>
   <div class="model-pills" id="model-pills"></div>
   <input class="search-input" id="search" placeholder="🔎 Поиск услуги..." oninput="renderTable()">
   <div class="table-header">
@@ -234,14 +232,14 @@ function rGroups(){
     return '<button class="pill'+(a?' active':'')+'" onclick="sg('+g.r[0]+')">'+g.l+'</button>';
   }).join('');
 }
-function sg(i){mi=i;rGroups();rModels();rTable();rDiagModel();}
+function sg(i){mi=i;rModels();rTable();rDiagModel();}
 
 function rModels(){
   document.getElementById('model-pills').innerHTML=MODELS.map((m,i)=>
     '<button class="model-pill'+(i===mi?' active':'')+'" onclick="sm('+i+')">'+m.replace('iPhone ','')+' </button>'
   ).join('');
 }
-function sm(i){mi=i;rGroups();rModels();rTable();rDiagModel();if(cs!==null)rResult();}
+function sm(i){mi=i;rModels();rTable();rDiagModel();if(cs!==null)rResult();}
 
 function rTable(){
   const q=document.getElementById('search').value.toLowerCase();
@@ -369,7 +367,7 @@ async function submitBooking(){
   }catch(e){btn.disabled=false;btn.textContent='✅ Записаться';alert('Ошибка. Позвоните нам напрямую.');}
 }
 
-function init(){rGroups();rModels();rTable();rSymptoms();rDiagModel();}
+function init(){rModels();rTable();rSymptoms();rDiagModel();}
 init();
 </script>
 </body>
