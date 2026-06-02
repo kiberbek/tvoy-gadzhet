@@ -111,6 +111,7 @@ body { background:var(--black); color:var(--white); font-family:'Segoe UI',syste
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('price',this)">💰 Прайс-лист</button>
   <button class="tab-btn inactive" onclick="switchTab('diag',this)">🔍 Диагностика</button>
+  <button class="tab-btn inactive" onclick="openModal('Android')" id="tab-android">🤖 Android</button>
 </div>
 <div id="panel-price" class="panel active">
   <div class="section-label" style="margin-top:4px">Модель</div>
@@ -141,7 +142,7 @@ body { background:var(--black); color:var(--white); font-family:'Segoe UI',syste
     <div id="modal-form-view">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
         <div>
-          <div class="modal-title">📅 Запись на диагностику</div>
+          <div class="modal-title" id="modal-title-text">📅 Запись на диагностику</div>
           <div class="modal-sub">Бесплатно • Комсомольский пр-т 18, ТЦ Комсомольский • <a href="tel:+79069148881" style="color:#7DC832;text-decoration:none">8 (906) 914-88-81</a></div>
         </div>
         <button class="modal-close" onclick="closeModal()">×</button>
@@ -327,8 +328,22 @@ function openModal(model){
   document.getElementById('modal-submit-btn').textContent='✅ Записаться';
   document.getElementById('input-model').style.borderColor='';
   document.getElementById('input-phone').style.borderColor='';
-  if(model)document.getElementById('input-model').value=model;
+  if(model==='Android'){
+    document.getElementById('input-model').value='';
+    document.getElementById('input-model').placeholder='Samsung, Xiaomi, Huawei...';
+  } else {
+    document.getElementById('input-model').placeholder='iPhone 15 Pro, Samsung S24...';
+    if(model)document.getElementById('input-model').value=model;
+  }
+  // Меняем заголовок модала
+  if(model==='Android'){
+    document.getElementById('modal-title-text').textContent='🤖 Запись Android на диагностику';
+  } else {
+    document.getElementById('modal-title-text').textContent='📅 Запись на диагностику';
+  }
   document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('tab-android').classList.remove('active');
+  document.getElementById('tab-android').classList.add('inactive');
 }
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
 function closeModalOutside(e){if(e.target.id==='modal-overlay')closeModal();}
